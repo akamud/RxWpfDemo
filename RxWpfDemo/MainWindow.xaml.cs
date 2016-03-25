@@ -59,9 +59,16 @@ namespace RxWpfDemo
                 h => textBox.TextChanged += h,
                 h => textBox.TextChanged -= h).Select(x => ((TextBox)x.Sender).Text);
 
-            textChanged.Select(x => GetResult(x))
+            textChanged
+                .Throttle(TimeSpan.FromMilliseconds(300))
+                .DistinctUntilChanged()
+                .Select(x => GetResult(x))
+                .Switch()
                 .ObserveOnDispatcher()
-                .Subscribe(async x => label.Content = await x.FirstAsync());
+                .Subscribe(x => {
+                    Debug.Print("Respondendo: " + x);
+                    label.Content = x;
+                });
         }
 
         //private string GetResult(string word)
@@ -73,6 +80,8 @@ namespace RxWpfDemo
 
         private IObservable<string> GetResult(string word)
         {
+            Debug.Print("Tratando: " + word);
+
             return Observable.FromAsync(() => AsyncResult(word));
         }
 
